@@ -1,5 +1,7 @@
 Scraper pour le rôle d'évaluation foncière de la Ville de Montréal: http://evalweb.ville.montreal.qc.ca/
 
+For 2012, this represents $214,989,968,755.00 (215 *billion* dollars).
+
 # Example Queries
 
 ## Total Value

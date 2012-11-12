@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'mechanize'
 
+# TODO unify the array and the hash (order is important)
 columns = ['id', 'adresse', 'ville', 'proprietaire', 'arrondissement', 'arrondissement_no',
   'matricule', 'compte', 'uef_id', 'cubf', 'nb_logements', 'voisinage',
   'emplacement_front', 'emplacemment_profondeur', 'emplacement_superficie',
@@ -29,6 +30,7 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("use registre_foncier_montreal\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
   sql.write("create table evaluations (\n" + columns.map{|col| t=sql_types[column_types[col]] ; "  #{col} #{t}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
+  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations;\n")
   sql.write("CREATE INDEX proprietaire_index ON address (proprietaire);")
   sql.write("CREATE INDEX arrondissement_index ON address (arrondissement);")
   sql.write("CREATE INDEX arrondissement_no_index ON address (arrondissement_no);")
@@ -39,8 +41,9 @@ end
 File.open("evaluations.csv", 'w') do |f|
   f.write(columns.join("\t"))
   f.write("\n")
-  Dir.entries("cache/address").reject {|v| v =~ /^\./}.each do |address_id|
-    content = File.open("cache/address/" + address_id, 'rb') { |fr| fr.read }
+  Dir.glob("cache/address/**").reject {|v| v =~ /^\./}.each do |path|
+    address_id = File.basename(path)
+    content = File.open(path, 'rb') { |fr| fr.read }
     page = Nokogiri::HTML::Document.parse(content)
     data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
     data = data.each_with_index.map { |cell,index|
@@ -50,9 +53,6 @@ File.open("evaluations.csv", 'w') do |f|
     data.push(address_id)
     f.write(data.join("\t"))
     f.write("\n")
-    if data.size != columns.size
-      puts "WTF\t#{data.size}\t" + data.join("\t")
-    end
   end
 end
 

@@ -55,54 +55,51 @@ class EvalWebScraper
 end
 
 evalweb = EvalWebScraper.new
-[('aa'..'zz'),(0..9)].each do |range|
-  range.map.each do |search_term|
-  #range.map.reverse.each do |search_term| # reverse when resuming near the end
-    # The session can expire, so do not cache queries in hope of avoiding that.
-    streets_body = ScrapeCache::get('street_search', search_term)
-    #streets_body = nil
-    streets_page = if (streets_body.nil?)
-      puts "[#{search_term}] GET streets: #{search_term}"
-      page = evalweb.search_street(search_term)
-      ScrapeCache::put('street_search', search_term, page.body)
+[('aa'..'zz'),(0..9)].map{|r|r.map}.flatten.each do |search_term|
+  # The session can expire, so do not cache queries in hope of avoiding that.
+  streets_body = ScrapeCache::get('street_search', search_term)
+  #streets_body = nil
+  streets_page = if (streets_body.nil?)
+    puts "[#{search_term}] GET streets: #{search_term}"
+    page = evalweb.search_street(search_term)
+    ScrapeCache::put('street_search', search_term, page.body)
+    page.parser
+  else
+    puts "[#{search_term}] CACHE search: #{search_term}"
+    Nokogiri::HTML::Document.parse(streets_body)
+  end
+  streets_page.css('/html/body/div/div/div/p[6]/select/option').each do |street_option|
+    street_id = street_option.attribute('value').value
+    street_name = street_option.content.gsub(/\s+/, " ")
+    street_body = ScrapeCache::get('street', street_id)
+    street_page = if (street_body.nil?)
+      puts "[#{search_term}] GET street: #{street_id} (#{street_name})"
+      page = evalweb.get_street(street_id)
+      ScrapeCache::put('street', street_id, page.body)
       page.parser
     else
-      puts "[#{search_term}] CACHE search: #{search_term}"
-      Nokogiri::HTML::Document.parse(streets_body)
+      puts "[#{search_term}] CACHE street: #{street_id} (#{street_name})"
+      Nokogiri::HTML::Document.parse(street_body)
     end
-    streets_page.css('/html/body/div/div/div/p[6]/select/option').each do |street_option|
-      street_id = street_option.attribute('value').value
-      street_name = street_option.content.gsub(/\s+/, " ")
-      street_body = ScrapeCache::get('street', street_id)
-      street_page = if (street_body.nil?)
-        puts "[#{search_term}] GET street: #{street_id} (#{street_name})"
-        page = evalweb.get_street(street_id)
-        ScrapeCache::put('street', street_id, page.body)
-        page.parser
-      else
-        puts "[#{search_term}] CACHE street: #{street_id} (#{street_name})"
-        Nokogiri::HTML::Document.parse(street_body)
-      end
-      street_page.css("option").each do |option|
-        address_id = option.attribute('value').value
-        address_name = option.content
-        begin
-          address_body = ScrapeCache::get('address', address_id)
-          address_page = if (address_body.nil?)
-            puts "[#{search_term}] GET address: #{address_id} (#{address_name})"
-            page = evalweb.get_evaluation(address_id)
-            if (!page.nil?)
-              ScrapeCache::put('address', address_id, page.body)
-              page.parser
-            end
-          else
-            puts "[#{search_term}] CACHE address: #{address_id} (#{address_name})"
-            Nokogiri::HTML::Document.parse(address_body)
+    street_page.css("option").each do |option|
+      address_id = option.attribute('value').value
+      address_name = option.content
+      begin
+        address_body = ScrapeCache::get('address', address_id)
+        address_page = if (address_body.nil?)
+          puts "[#{search_term}] GET address: #{address_id} (#{address_name})"
+          page = evalweb.get_evaluation(address_id)
+          if (!page.nil?)
+            ScrapeCache::put('address', address_id, page.body)
+            page.parser
           end
-          # Do something with address_page?
-        rescue
-          puts "[#{search_term}] ERROR address: #{address_id} (#{address_name}) " + $!
+        else
+          puts "[#{search_term}] CACHE address: #{address_id} (#{address_name})"
+          Nokogiri::HTML::Document.parse(address_body)
         end
+        # Do something with address_page?
+      rescue
+        puts "[#{search_term}] ERROR address: #{address_id} (#{address_name}) " + $!
       end
     end
   end
