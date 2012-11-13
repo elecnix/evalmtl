@@ -2,6 +2,38 @@ Scraper pour le rôle d'évaluation foncière de la Ville de Montréal: http://e
 
 For 2012, this represents $214,989,968,755.00 (215 *billion* dollars).
 
+# Installation
+
+    git clone ...
+    
+On Ubuntu, you may have to install some libraries first:
+
+    sudo apt-get install rubygem libxslt1-dev
+    gem install mechanize
+
+# Usage
+
+Start scraping:
+
+    ./scrape-evalweb.rb
+
+The scraper produces a `cache` directory, where it stores the web pages it fetched.
+
+Once it is done, or while it runs (to test queries with an incomplete scrape), extract the data.
+This will create `evaluations.csv` as well as the SQL commands to load it into MySQL:
+
+    ./export-evalweb.rb
+    ./export-streets.rb
+
+Let it finish, then import the resulting files into MySQL
+
+    mysql -u root < evaluations.sql
+    mysql -u root < streets.sql
+
+You can now query the database:
+
+    mysql -u root registre_foncier_montreal
+
 # Example Queries
 
 ## Total Value
