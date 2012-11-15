@@ -23,6 +23,7 @@ class EvalWebAgent
       page
     rescue
       tries += 1
+      # TODO $!.page: undefined method `page' for #<SocketError: getaddrinfo: Name or service not known>
       if ($!.page && $!.page.body.include?("Requested operation requires a current record"))
         puts "Missing!"
       else
@@ -64,7 +65,7 @@ class EvalWebScraper
     # TODO callback for get/cache & parsing
     streets_body = ScrapeCache::get('street_search', term)
     if (streets_body.nil?)
-      puts "[#{@search_term}] SEARCH streets: #{search_term}"
+      puts "[#{@search_term}] SEARCH streets: #{term}"
       page = @evalweb.search_street(term)
       ScrapeCache::put('street_search', term, page.body)
       page.parser
@@ -139,7 +140,7 @@ class EvalWebScraper
             address_page = get_address_page(address_id, address_name)
             address_scraped(address_page, street_id, street_name, address_id, address_name)
           rescue
-            puts "[#{search_term}] ERROR address: #{address_id} (#{address_name}) " + $!
+            puts "[#{term}] ERROR address: #{address_id} (#{address_name}) " + $!
           end
         end
       end

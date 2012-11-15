@@ -30,18 +30,22 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("use registre_foncier_montreal\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
   sql.write("create table evaluations (\n" + columns.map{|col| t=sql_types[column_types[col]] ; "  #{col} #{t}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
-  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations;\n")
-  sql.write("CREATE INDEX proprietaire_index ON address (proprietaire);")
-  sql.write("CREATE INDEX arrondissement_index ON address (arrondissement);")
-  sql.write("CREATE INDEX arrondissement_no_index ON address (arrondissement_no);")
-  sql.write("CREATE INDEX type_lot_index ON address (type_lot);")
-  sql.write("CREATE INDEX uef_id_index ON address (uef_id);")
+  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations IGNORE 1 LINES;\n")
+  sql.write("CREATE INDEX adresse_index ON evaluations (adresse);")
+  sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);")
+  sql.write("CREATE INDEX arrondissement_index ON evaluations (arrondissement);")
+  sql.write("CREATE INDEX arrondissement_no_index ON evaluations (arrondissement_no);")
+  sql.write("CREATE INDEX type_lot_index ON evaluations (type_lot);")
+  sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);")
 end
 
-File.open("evaluations.csv", 'w') do |f|
-  f.write(columns.join("\t"))
-  f.write("\n")
-  Dir.glob("cache/address/**").reject {|v| v =~ /^\./}.each do |path|
+File.open("evaluations.csv", 'w') do |csv|
+  csv.write(columns.join("\t"))
+  csv.write("\n")
+  Dir.glob("cache/address/**") \
+      .reject {|v| v =~ /^\./} \
+      .reject{|f| File.directory?(f)} \
+      .each do |path|
     address_id = File.basename(path)
     content = File.open(path, 'rb') { |fr| fr.read }
     page = Nokogiri::HTML::Document.parse(content)
@@ -50,9 +54,9 @@ File.open("evaluations.csv", 'w') do |f|
       type = column_types[columns[index]]
       type == :s ? cell : cell.gsub(',','')
     }
-    data.push(address_id)
-    f.write(data.join("\t"))
-    f.write("\n")
+    data.unshift(address_id)
+    csv.write(data.join("\t"))
+    csv.write("\n")
   end
 end
 

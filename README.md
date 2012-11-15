@@ -105,3 +105,7 @@ You can now query the database:
       ORDER BY valeur_terrain/emplacement_superficie DESC
       LIMIT 30;
 
+Now, get creative!
+
+http://argent.canoe.ca/lca/financespersonnelles/quebec/archives/2010/01/20100111-113558.html
+
