@@ -16,16 +16,20 @@ On Ubuntu, you may have to install some libraries first:
 Start scraping:
 
     ./scrape-evalweb.rb
+    tar czf evalweb-cache.tgz cache/address/
 
-The scraper produces a `cache` directory, where it stores the web pages it fetched.
+The scraper produces a `cache` directory, where it stores the web pages it fetched. This directory contains close to a million files, which is inefficient to store in a filesystem, but simple for lookup done by the scraper.
 
-Once it is done, or while it runs (to test queries with an incomplete scrape), extract the data.
-This will create `evaluations.csv` as well as the SQL commands to load it into MySQL:
+You may spare yourself the scraping by downloading a cache from november 2012 with BitTorrent:
+
+    magnet:?xt=urn:btih:cf07bef9dc9264abd8a0ab9c4412bea634065b1a&dn=evalweb-cache.tgz&tr=udp%3A%2F%2Ftracker.istole.it%3A80
+
+Once it is done, extract the data. This will create `evaluations.csv` as well as the SQL commands to load it into MySQL:
 
     ./export-evalweb.rb
     ./export-streets.rb
 
-Let it finish, then import the resulting files into MySQL
+Let it finish (it can take hours for the tar archive generation), then import the resulting files into MySQL:
 
     mysql -u root < evaluations.sql
     mysql -u root < streets.sql

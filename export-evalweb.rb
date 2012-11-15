@@ -2,6 +2,8 @@
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
+require 'zlib'
+require 'archive/tar/minitar'
 
 # TODO unify the array and the hash (order is important)
 columns = ['id', 'adresse', 'ville', 'proprietaire', 'arrondissement', 'arrondissement_no',
@@ -42,21 +44,21 @@ end
 File.open("evaluations.csv", 'w') do |csv|
   csv.write(columns.join("\t"))
   csv.write("\n")
-  Dir.glob("cache/address/**") \
-      .reject {|v| v =~ /^\./} \
-      .reject{|f| File.directory?(f)} \
-      .each do |path|
-    address_id = File.basename(path)
-    content = File.open(path, 'rb') { |fr| fr.read }
-    page = Nokogiri::HTML::Document.parse(content)
-    data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
-    data = data.each_with_index.map { |cell,index|
-      type = column_types[columns[index]]
-      type == :s ? cell : cell.gsub(',','')
-    }
-    data.unshift(address_id)
-    csv.write(data.join("\t"))
-    csv.write("\n")
+  tgz = Zlib::GzipReader.new(File.open('evalweb-cache.tgz', 'rb'))
+  Archive::Tar::Minitar::Input.open(tgz) do |input|
+    input.each do |entry|
+      next unless entry.full_name.match('^cache/address/') && entry.file?
+      address_id = File.basename(entry.full_name)
+      page = Nokogiri::HTML::Document.parse(entry.read)
+      data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
+      data = data.each_with_index.map { |cell,index|
+        type = column_types[columns[index]]
+        type == :s ? cell : cell.gsub(',','')
+      }
+      data.unshift(address_id)
+      csv.write(data.join("\t"))
+      csv.write("\n")
+    end
   end
 end
 
