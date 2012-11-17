@@ -30,12 +30,12 @@ File.open("evaluations.sql", 'w') do |sql|
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
   sql.write("create table evaluations (\n" + columns.map{|c| c.map{|col,t| "  #{col} #{sql_types[t]}"}}.join(",\n") + "\n) ENGINE=InnoDB;\n")
   sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
-  sql.write("CREATE INDEX adresse_index ON evaluations (adresse);")
-  sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);")
-  sql.write("CREATE INDEX arrondissement_index ON evaluations (arrondissement);")
-  sql.write("CREATE INDEX arrondissement_no_index ON evaluations (arrondissement_no);")
-  sql.write("CREATE INDEX type_lot_index ON evaluations (type_lot);")
-  sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);")
+  sql.write("CREATE INDEX adresse_index ON evaluations (adresse);\n")
+  sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);\n")
+  sql.write("CREATE INDEX arrondissement_index ON evaluations (arrondissement);\n")
+  sql.write("CREATE INDEX arrondissement_no_index ON evaluations (arrondissement_no);\n")
+  sql.write("CREATE INDEX type_lot_index ON evaluations (type_lot);\n")
+  sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);\n")
 end
 
 File.open("evaluations.csv", 'w:UTF-8') do |csv|
