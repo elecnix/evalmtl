@@ -84,7 +84,7 @@ Or download the CSV file directly:
         format(sum(valeur_batiment),0) as batiments,
         format(sum(valeur_immeuble),0) as immeubles
       FROM evaluations
-      JOIN address_street ON address_street.address_id = address.uef_id
+      JOIN address_street ON address_street.address_id = evaluations.uef_id
       GROUP BY (street_name)
       ORDER BY SUM(valeur_immeuble) DESC
       LIMIT 30;
@@ -96,7 +96,7 @@ Or download the CSV file directly:
         format(sum(valeur_batiment),0) as batiments,
         format(sum(valeur_immeuble),0) as immeubles
       FROM evaluations
-      JOIN address_street ON address_street.address_id = address.uef_id
+      JOIN address_street ON address_street.address_id = evaluations.uef_id
       WHERE substring(address_street.street_name, 1, LOCATE(',', address_street.street_name)-1)
         = 'SAINTE CATHERINE'
       GROUP BY (proprietaire)
@@ -109,7 +109,7 @@ Or download the CSV file directly:
         emplacement_superficie as superficice,
         format(valeur_terrain/emplacement_superficie,0) as valeur_terrain
       FROM evaluations
-      JOIN address_street ON address_street.address_id = address.uef_id
+      JOIN address_street ON address_street.address_id = evaluations.uef_id
       WHERE substring(address_street.street_name, 1, LOCATE(',', address_street.street_name)-1)
         = 'SAINTE CATHERINE'
       ORDER BY valeur_terrain/emplacement_superficie DESC
