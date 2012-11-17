@@ -42,7 +42,7 @@ You may spare yourself the scraping by downloading a cache from november 2012 wi
 
 Or download the CSV file directly:
 
-    magnet:?xt=urn:btih:ef127f29e1d9fb5da12d93702bd77301b8e0bb83&dn=evaluations.csv&tr=udp%3A%2F%2Ftracker.istole.it%3A80
+    magnet:?xt=urn:btih:5fdd555ff92acb6fb300a50c71d90516770aeda3&dn=evaluations.csv.gz&tr=udp%3A%2F%2Ftracker.istole.it%3A80
 
 # Example Queries
 
