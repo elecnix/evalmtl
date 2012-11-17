@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# encoding: UTF-8
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
@@ -32,7 +33,7 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("use registre_foncier_montreal\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
   sql.write("create table evaluations (\n" + columns.map{|col| t=sql_types[column_types[col]] ; "  #{col} #{t}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
-  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations IGNORE 1 LINES;\n")
+  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
   sql.write("CREATE INDEX adresse_index ON evaluations (adresse);")
   sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);")
   sql.write("CREATE INDEX arrondissement_index ON evaluations (arrondissement);")
@@ -41,7 +42,7 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);")
 end
 
-File.open("evaluations.csv", 'w') do |csv|
+File.open("evaluations.csv", 'w:UTF-8') do |csv|
   csv.write(columns.join("\t"))
   csv.write("\n")
   tgz = Zlib::GzipReader.new(File.open('evalweb-cache.tgz', 'rb'))
@@ -49,7 +50,7 @@ File.open("evaluations.csv", 'w') do |csv|
     input.each do |entry|
       next unless entry.full_name.match('^cache/address/') && entry.file?
       address_id = File.basename(entry.full_name)
-      page = Nokogiri::HTML::Document.parse(entry.read)
+      page = Nokogiri::HTML::Document.parse(entry.read, encoding='UTF-8')
       data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
       data = data.each_with_index.map { |cell,index|
         type = column_types[columns[index]]
