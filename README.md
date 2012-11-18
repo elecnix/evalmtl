@@ -115,6 +115,69 @@ Or download the CSV file directly:
       ORDER BY valeur_terrain/emplacement_superficie DESC
       LIMIT 30;
 
+## Land Value Average by Street
+
+    SELECT
+        address_street.street_name,
+        count(*) as nb_terrains,
+        sum(valeur_terrain) as valeur_total_terrains,
+        sum(emplacement_superficie) as total_superficie,
+        sum(valeur_terrain) / sum(emplacement_superficie) as valeur_moyenne
+      FROM evaluations
+      JOIN address_street ON address_street.address_id = evaluations.uef_id
+      GROUP BY (street_name)
+      ORDER BY street_name ASC
+      LIMIT 100;
+
+# Merge Street Name with Lot
+
+For big queries, joining on the address_street table can be expensive, so it is a good idea to merge the two together. However, some lots have multiple addresses, so let's keep in mind we'll be picking just one per lot.
+
+    ALTER TABLE evaluations ADD COLUMN street_name varchar(200);
+    UPDATE evaluations
+      JOIN address_street on address_street.address_id = evaluations.uef_id
+      SET evaluations.street_name = address_street.street_name;
+    CREATE INDEX evaluations_street_name_index ON evaluations (street_name);
+
+## Land Value Average by Street
+
+    SELECT
+        street_name,
+        count(*) as nb_terrains,
+        sum(valeur_terrain) as valeur_total_terrains,
+        sum(emplacement_superficie) as total_superficie,
+        sum(valeur_terrain) / sum(emplacement_superficie) as valeur_moyenne
+      FROM evaluations
+      GROUP BY (street_name)
+      ORDER BY street_name ASC
+      LIMIT 100;
+
+## Land Difference with Street Average
+
+    SELECT
+        proprietaire,
+        adresse,
+        nb_etages,
+        valeur_terrain,
+        emplacement_superficie as superficie,
+        street_average.valeur_moyenne,
+        valeur_terrain / emplacement_superficie as valeur,
+        valeur_terrain / emplacement_superficie - street_average.valeur_moyenne as difference
+      FROM evaluations
+      JOIN (
+        SELECT
+            street_name,
+            sum(valeur_terrain) / sum(emplacement_superficie) as valeur_moyenne
+          FROM evaluations
+          WHERE emplacement_superficie > 64
+          GROUP BY street_name
+      ) AS street_average ON street_average.street_name = evaluations.street_name
+      WHERE
+        emplacement_superficie > 64
+        AND valeur_terrain / emplacement_superficie - street_average.valeur_moyenne < 50
+      ORDER BY difference ASC
+      LIMIT 100;
+
 Now, get creative!
 
 http://argent.canoe.ca/lca/financespersonnelles/quebec/archives/2010/01/20100111-113558.html
