@@ -157,25 +157,25 @@ For big queries, joining on the address_street table can be expensive, so it is 
     SELECT
         proprietaire,
         adresse,
+        no_lot_renove,
         nb_etages,
         valeur_terrain,
         emplacement_superficie as superficie,
         street_average.valeur_moyenne,
         valeur_terrain / emplacement_superficie as valeur,
-        valeur_terrain / emplacement_superficie - street_average.valeur_moyenne as difference
+        valeur_terrain / emplacement_superficie - street_average.valeur_moyenne as difference,
+        street_average.valeur_moyenne * emplacement_superficie - valeur_terrain as manque
       FROM evaluations
       JOIN (
         SELECT
             street_name,
             sum(valeur_terrain) / sum(emplacement_superficie) as valeur_moyenne
           FROM evaluations
-          WHERE emplacement_superficie > 64
+          WHERE emplacement_superficie > 50
           GROUP BY street_name
       ) AS street_average ON street_average.street_name = evaluations.street_name
-      WHERE
-        emplacement_superficie > 64
-        AND valeur_terrain / emplacement_superficie - street_average.valeur_moyenne < 50
-      ORDER BY difference ASC
+      WHERE valeur_terrain / emplacement_superficie - street_average.valeur_moyenne < 50
+      ORDER BY manque DESC
       LIMIT 100;
 
 Now, get creative!
