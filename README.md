@@ -10,6 +10,7 @@ On Ubuntu, you may have to install some libraries first:
 
     sudo apt-get install rubygem libxslt1-dev
     gem install mechanize
+    gem install minitar
 
 # Usage
 
