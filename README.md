@@ -8,7 +8,7 @@ For 2012, this represents $214,989,968,755.00 (215 *billion* dollars).
     
 On Ubuntu, you may have to install some libraries first:
 
-    sudo apt-get install rubygem libxslt1-dev
+    sudo apt-get install rubygems libxslt1-dev
     gem install mechanize
     gem install minitar
 
