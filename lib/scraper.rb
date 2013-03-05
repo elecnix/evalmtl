@@ -2,11 +2,13 @@
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
-require 'lib/cache.rb'
+require './lib/cache.rb'
 
 class EvalWebAgent
   def initialize
     @agent = Mechanize.new
+    @agent.default_encoding = 'iso-8859-1'
+    @agent.force_default_encoding = true
     weird_page = @agent.get('http://evalweb.ville.montreal.qc.ca/')
     @search_page = weird_page.meta_refresh[0].click
   end
@@ -27,7 +29,7 @@ class EvalWebAgent
       if ($!.page && $!.page.body.include?("Requested operation requires a current record"))
         puts "Missing!"
       else
-        puts "RETRY #{tries} " + $!
+        puts "RETRY #{tries} " + $!.to_s
         retry if tries <= 1
         puts "ERROR (tried #{tries})"
       end
@@ -60,37 +62,38 @@ class EvalWebScraper
   def initialize
     @evalweb = EvalWebAgent.new
     @search_term = nil
+    @cache = ScrapeCache.new
   end
   def search_street(term)
     # TODO callback for get/cache & parsing
-    streets_body = ScrapeCache::get('street_search', term)
+    streets_body = @cache.get('street_search', term)
     if (streets_body.nil?)
       puts "[#{@search_term}] SEARCH streets: #{term}"
       page = @evalweb.search_street(term)
-      ScrapeCache::put('street_search', term, page.body)
+      @cache.put('street_search', term, page.parser.to_s)
       page.parser
     else
       Nokogiri::HTML::Document.parse(streets_body)
     end
   end
   def get_street_page(street_id, street_name)
-    street_body = ScrapeCache::get('street', street_id)
+    street_body = @cache.get('street', street_id)
     if (street_body.nil?)
       puts "[#{@search_term}] GET street: #{street_id} (#{street_name})"
       page = @evalweb.get_street(street_id)
-      ScrapeCache::put('street', street_id, page.body)
+      @cache.put('street', street_id, page.parser.to_s)
       page.parser
     else
       Nokogiri::HTML::Document.parse(street_body)
     end
   end
   def get_address_page(address_id, address_name)
-    address_body = ScrapeCache::get('address', address_id)
+    address_body = @cache.get('address', address_id)
     if (address_body.nil?)
       puts "[#{@search_term}] GET address: #{address_id} (#{address_name})"
       page = @evalweb.get_evaluation(address_id)
       if (!page.nil?)
-        ScrapeCache::put('address', address_id, page.body)
+        @cache.put('address', address_id, page.parser.to_s)
         page.parser
       end
     else
@@ -115,13 +118,13 @@ class EvalWebScraper
       start_term ||= previous_term
       start_street_id ||= previous_street_id
     end
-    terms = [('aa'..'zz'),(0..9)].map{|r|r.map}.flatten
+    terms = [('aa'..'zz'),(0..9)].map{|r|r.map{|v|v}}.flatten
     terms = terms.slice(terms.index(start_term), terms.length) unless start_term.nil?
     terms.each do |term|
       puts term
       @search_term = term
       # The session can expire, so do not cache queries in hope of avoiding that.
-      streets_body = ScrapeCache::get('street_search', term)
+      streets_body = @cache.get('street_search', term)
       search_results = search_street(term)
       search_results.css('/html/body/div/div/div/p[6]/select/option').each do |street_option|
         street_id = street_option.attribute('value').value

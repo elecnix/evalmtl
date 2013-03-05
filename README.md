@@ -6,11 +6,13 @@ For 2012, this represents $214,989,968,755.00 (215 *billion* dollars).
 
     git clone ...
     
-On Ubuntu, you may have to install some libraries first:
+On Ubuntu, you may have to install some libraries and PostgreSQL first:
 
-    sudo apt-get install rubygem libxslt1-dev
+    sudo apt-get install rubygem libxslt1-dev postgresql
     gem install mechanize
     gem install minitar
+    sudo -u postgres createdb --encoding=latin1 evalmtl
+    sudo -u postgres createuser --superuser $USER --pwprompt
 
 # Usage
 
