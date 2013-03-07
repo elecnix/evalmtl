@@ -32,7 +32,7 @@ Let it finish (it can take hours for the tar archive generation, and an hour for
 
 You can now query the database:
 
-    mysql -u root registre_foncier_montreal
+    mysql -u root evalmtl
 
 # Downloads
 

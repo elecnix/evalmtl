@@ -1,4 +1,4 @@
-use registre_foncier_montreal;
+use evalmtl;
 CREATE TABLE address_street_tmp (address_id integer, street_name varchar(200));
 LOAD DATA LOCAL INFILE 'streets.csv' INTO TABLE address_street_tmp CHARACTER SET UTF8 FIELDS OPTIONALLY ENCLOSED BY "'";
 CREATE INDEX address_street_tmp_address_id_index ON address_street_tmp (address_id);

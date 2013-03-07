@@ -24,8 +24,8 @@ columns = [
 ]
 
 File.open("evaluations.sql", 'w') do |sql|
-  sql.write("create database registre_foncier_montreal;\n")
-  sql.write("use registre_foncier_montreal\n")
+  sql.write("create database evalmtl ENGINE=InnoDB;\n")
+  sql.write("use evalmtl\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
   sql.write("create table evaluations (\n" + columns.map{|c| c.map{|col,t| "  #{col} #{sql_types[t]}"}}.join(",\n") + "\n) ENGINE=InnoDB;\n")
   sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
