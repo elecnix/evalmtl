@@ -88,16 +88,12 @@ class EvalWebScraper
     end
   end
   def get_address_page(address_id, address_name)
-    address_body = @cache.get('address', address_id)
-    if (address_body.nil?)
+    unless (@cache.include?('address', address_id))
       puts "[#{@search_term}] GET address: #{address_id} (#{address_name})"
       page = @evalweb.get_evaluation(address_id)
-      if (!page.nil?)
-        @cache.put('address', address_id, page.body)
-        page.parser
+      unless (page.nil?)
+        @cache.put('address', address_id, page.parser.to_s)
       end
-    else
-      Nokogiri::HTML::Document.parse(address_body)
     end
   end
   def state_file
@@ -121,7 +117,7 @@ class EvalWebScraper
     terms = [('aa'..'zz'),(0..9)].map{|r|r.map{|v|v}}.flatten
     terms = terms.slice(terms.index(start_term), terms.length) unless start_term.nil?
     terms.each do |term|
-      puts term
+      puts "Search term: #{term}"
       @search_term = term
       # The session can expire, so do not cache queries in hope of avoiding that.
       streets_body = @cache.get('street_search', term)
@@ -138,19 +134,14 @@ class EvalWebScraper
         street_page = get_street_page(street_id, street_name)
         street_page.css("option").each do |option|
           address_id = option.attribute('value').value
-          address_name = option.content
+          address_name = option.content.strip
           begin
-            address_page = get_address_page(address_id, address_name)
-            address_scraped(address_page, street_id, street_name, address_id, address_name)
+            get_address_page(address_id, address_name)
           rescue
             puts "[#{term}] ERROR address: #{address_id} (#{address_name}) " + $!.to_s
           end
         end
       end
     end
-  end
-  def address_scraped(address_page, street_id, street_name, address_id, address_name)
-    # Not doing anything here with the result; will be in cache.
-    # Override this method if processing is necessary.
   end
 end
