@@ -7,6 +7,8 @@ require './lib/cache.rb'
 class EvalWebAgent
   def initialize
     @agent = Mechanize.new
+    @agent.default_encoding = 'iso-8859-1'
+    @agent.force_default_encoding = true
     weird_page = @agent.get('http://evalweb.ville.montreal.qc.ca/')
     @search_page = weird_page.meta_refresh[0].click
   end
