@@ -4,8 +4,9 @@
 require 'rubygems'
 require 'mechanize'
 require 'dbm'
+require 'celluloid'
 
-columns = [
+COLUMNS = [
   {'id' => :i},
   {'adresse' => :s}, {'ville' => :s}, {'proprietaire' => :s},
   {'arrondissement' => :s}, {'arrondissement_no' => :i},
@@ -27,7 +28,7 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("create database registre_foncier_montreal;\n")
   sql.write("use registre_foncier_montreal\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
-  sql.write("create table evaluations (\n" + columns.map{|c| c.map{|col,t| "  #{col} #{sql_types[t]}"}}.join(",\n") + "\n) ENGINE=InnoDB;\n")
+  sql.write("create table evaluations (\n" + COLUMNS.map{|c| c.map{|col,t| "  #{col} #{sql_types[t]}"}}.join(",\n") + "\n) ENGINE=InnoDB;\n")
   sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
   sql.write("CREATE INDEX adresse_index ON evaluations (adresse);\n")
   sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);\n")
@@ -37,22 +38,53 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);\n")
 end
 
-db = DBM.open('address')
-File.open("evaluations.csv", 'w:UTF-8') do |csv|
-  csv.write(columns.map{|c|c.keys}.join("\t"))
-  csv.write("\n")
-  db.each_entry do |address_id, page_content|
-    page_content.force_encoding('utf-8')
+class AddressParser
+  include Celluloid
+  
+#  def initialize(csv)
+#    @csv = csv
+#  end
+  
+  def parse(address_id, page_content)
     page = Nokogiri::HTML::Document.parse(page_content, encoding='UTF-8')
     data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
     data = data.each_with_index.map { |cell,index|
-      type = columns[index].values if columns[index]
+      type = COLUMNS[index].values if COLUMNS[index]
       type == :s ? cell : cell.gsub(',','')
     }
     data.unshift(address_id)
-    csv.write(data.join("\t"))
-    csv.write("\n")
+    puts address_id
+    #@csv.async.write(data.join("\t"))
   end
 end
+
+class Writer
+  include Celluloid
+  
+  def open
+    @csv = File.open("evaluations.csv", 'w:UTF-8')
+  end
+  
+  def write(line)
+    @csv.write("#{line}\n")
+  end
+  
+  def close
+    @csv.close
+  end
+end
+
+#csv = Writer.new
+
+db = DBM.open('address')
+pool = AddressParser.pool
+#csv.write(COLUMNS.map{|c|c.keys}.join("\t"))
+#csv.write("\n")
+db.each_pair do |address_id, page_content|
+  page_content.force_encoding('utf-8')
+  pool.async.parse(address_id, page_content)
+end
 db.close
+#csv.close
+#csv.terminate
 
