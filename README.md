@@ -27,8 +27,8 @@ Once it is done, extract the data. This will create `evaluations.csv` as well as
 
 Let it finish (it can take hours for the tar archive generation, and an hour for the CSV export), then import the resulting files into MySQL:
 
-    mysql -u root < evaluations.sql
-    mysql -u root < streets.sql
+    mysql --local-infile -u root < evaluations.sql
+    mysql --local-infile -u root < streets.sql
 
 You can now query the database:
 
