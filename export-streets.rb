@@ -2,7 +2,7 @@
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
-require 'lib/cache.rb'
+require './lib/cache.rb'
 
 File.open("streets.csv", 'w:UTF-8') do |csv|
   [('aa'..'zz'),(0..9)].each do |ranges|
