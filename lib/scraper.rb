@@ -2,7 +2,7 @@
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
-require 'lib/cache.rb'
+require './lib/cache.rb'
 
 class EvalWebAgent
   def initialize
@@ -21,13 +21,13 @@ class EvalWebAgent
         raise "Session expired"
       end
       page
-    rescue
+    rescue Exception => e
       tries += 1
-      # TODO $!.page: undefined method `page' for #<SocketError: getaddrinfo: Name or service not known>
-      if ($!.page && $!.page.body.include?("Requested operation requires a current record"))
-        puts "Missing!"
+      # Check for body of page from Net::HTTPInternalServerError
+      if (e.page && e.page.body.include?("Requested operation requires a current record"))
+        puts "Missing from remote database!"
       else
-        puts "RETRY #{tries} " + $!
+        puts "RETRY #{tries} " + e.to_s
         retry if tries <= 1
         puts "ERROR (tried #{tries})"
       end
@@ -67,7 +67,7 @@ class EvalWebScraper
     if (streets_body.nil?)
       puts "[#{@search_term}] SEARCH streets: #{term}"
       page = @evalweb.search_street(term)
-      ScrapeCache::put('street_search', term, page.body)
+      @cache.put('street_search', term, page.parser.to_s)
       page.parser
     else
       Nokogiri::HTML::Document.parse(streets_body)
@@ -78,7 +78,7 @@ class EvalWebScraper
     if (street_body.nil?)
       puts "[#{@search_term}] GET street: #{street_id} (#{street_name})"
       page = @evalweb.get_street(street_id)
-      ScrapeCache::put('street', street_id, page.body)
+      @cache.put('street', street_id, page.parser.to_s)
       page.parser
     else
       Nokogiri::HTML::Document.parse(street_body)
@@ -115,7 +115,7 @@ class EvalWebScraper
       start_term ||= previous_term
       start_street_id ||= previous_street_id
     end
-    terms = [('aa'..'zz'),(0..9)].map{|r|r.map}.flatten
+    terms = [('aa'..'zz'),(0..9)].map{|r|r.map{|v|v}}.flatten
     terms = terms.slice(terms.index(start_term), terms.length) unless start_term.nil?
     terms.each do |term|
       puts term
@@ -140,7 +140,7 @@ class EvalWebScraper
             address_page = get_address_page(address_id, address_name)
             address_scraped(address_page, street_id, street_name, address_id, address_name)
           rescue
-            puts "[#{term}] ERROR address: #{address_id} (#{address_name}) " + $!
+            puts "[#{term}] ERROR address: #{address_id} (#{address_name}) " + $!.to_s
           end
         end
       end
