@@ -3,8 +3,7 @@
 # Ubuntu: sudo apt-get install rubygem libxslt1-dev && sudo gem install mechanize
 require 'rubygems'
 require 'mechanize'
-require 'zlib'
-require 'archive/tar/minitar'
+require 'dbm'
 
 columns = [
   {'id' => :i},
@@ -38,24 +37,22 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);\n")
 end
 
+db = DBM.open('address')
 File.open("evaluations.csv", 'w:UTF-8') do |csv|
   csv.write(columns.map{|c|c.keys}.join("\t"))
   csv.write("\n")
-  tgz = Zlib::GzipReader.new(File.open('evalweb-cache.tgz', 'rb'))
-  Archive::Tar::Minitar::Input.open(tgz) do |input|
-    input.each do |entry|
-      next unless entry.full_name.match('^cache/address/') && entry.file?
-      address_id = File.basename(entry.full_name)
-      page = Nokogiri::HTML::Document.parse(entry.read, encoding='UTF-8')
-      data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
-      data = data.each_with_index.map { |cell,index|
-        type = columns[index].values if columns[index]
-        type == :s ? cell : cell.gsub(',','')
-      }
-      data.unshift(address_id)
-      csv.write(data.join("\t"))
-      csv.write("\n")
-    end
+  db.each_entry do |address_id, page_content|
+    page_content.force_encoding('utf-8')
+    page = Nokogiri::HTML::Document.parse(page_content, encoding='UTF-8')
+    data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
+    data = data.each_with_index.map { |cell,index|
+      type = columns[index].values if columns[index]
+      type == :s ? cell : cell.gsub(',','')
+    }
+    data.unshift(address_id)
+    csv.write(data.join("\t"))
+    csv.write("\n")
   end
 end
+db.close
 

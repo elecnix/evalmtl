@@ -17,9 +17,8 @@ On Ubuntu, you may have to install some libraries first:
 Start scraping:
 
     ./scrape-evalweb.rb
-    tar czf evalweb-cache.tgz cache/address/
 
-The scraper produces a `cache` directory, where it stores the web pages it fetched. This directory contains close to a million files, which is inefficient to store in a filesystem, but simple for lookup done by the scraper.
+The scraper produces dir and pag files, where it stores the web pages it fetched.
 
 Once it is done, extract the data. This will create `evaluations.csv` as well as the SQL commands to load it into MySQL:
 
