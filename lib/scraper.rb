@@ -53,7 +53,7 @@ class EvalWebAgent
   end
   def get_evaluation(id_uef)
     perform_request do
-      @agent.get("CompteFoncier.ASP?id_uef=" + id_uef)
+      @agent.get("roleact_arron_min.asp?ue_id=" + id_uef)
     end
   end
 end
@@ -119,10 +119,8 @@ class EvalWebScraper
     terms.each do |term|
       puts "Search term: #{term}"
       @search_term = term
-      # The session can expire, so do not cache queries in hope of avoiding that.
-      streets_body = @cache.get('street_search', term)
       search_results = search_street(term)
-      search_results.css('/html/body/div/div/div/p[6]/select/option').each do |street_option|
+      search_results.css('select[@id=select1]/option').each do |street_option|
         street_id = street_option.attribute('value').value
         # If we haven't reached start_street_id, skip.
         unless start_street_id.nil?

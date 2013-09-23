@@ -2,7 +2,7 @@ require 'dbm'
 
 class ScrapeCache
   def initialize
-    @databases = Hash.new { |dbs, namespace| dbs[namespace] = DBM.open(namespace) }
+    @databases = Hash.new { |dbs, namespace| dbs[namespace] = DBM.open(namespace + "_2014") }
   end
   def put(namespace, key, value)
     if value.nil?

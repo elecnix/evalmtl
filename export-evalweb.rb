@@ -37,8 +37,8 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);\n")
 end
 
-db = DBM.open('address')
-File.open("evaluations.csv", 'w:UTF-8') do |csv|
+db = DBM.open('address_2014')
+File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
   csv.write(columns.map{|c|c.keys}.join("\t"))
   csv.write("\n")
   db.each_entry do |address_id, page_content|
