@@ -5,49 +5,47 @@ require 'rubygems'
 require 'mechanize'
 require 'dbm'
 
-columns = [
-  {'id' =>                 ['//*[@id="AutoNumber1"]/tr[14]/td[2]/b/font', :s]}, # no_dossier
-  {'municipalite' =>       ['//*[@id="AutoNumber1"]/tr[3]/td[2]/b/font', :s]},
-  {'role' =>               ['//*[@id="AutoNumber1"]/tr[4]/td[2]/b/font', :i]},
-  {'adresse' =>            ['//*[@id="AutoNumber1"]/tr[8]/td[2]/b/font', :s]},
-  {'arrondissement' =>     ['//*[@id="AutoNumber1"]/tr[9]/td[2]/b/font', :s]},
-  {'no_lot' =>             ['//*[@id="AutoNumber1"]/tr[10]/td[2]/b/font', :i]},
-  {'matricule' =>          ['//*[@id="AutoNumber1"]/tr[11]/td[2]/b/font', :i]},
-  {'unite_voisinage' =>    ['//*[@id="AutoNumber1"]/tr[13]/td[2]/b/font', :i]},
-  {'dossier' =>            ['//*[@id="AutoNumber1"]/tr[14]/td[2]/b/font', :s]},
-  {'proprietaire' =>       ['//*[@id="AutoNumber1"]/tr[18]/td[2]/b/font', :s]},
-  {'statut' =>             ['//*[@id="AutoNumber1"]/tr[19]/td[2]/font/b/font', :s]},
-  {'adresse_postale' =>    ['//*[@id="AutoNumber1"]/tr[20]/td[2]/b/font', :s]},
-  {'date_inscription' =>   ['//*[@id="AutoNumber1"]/tr[21]/td[2]/b/font', :s]},
-  {'cond_particuliere' =>  ['//*[@id="AutoNumber1"]/tr[22]/td[2]/b/font', :s]},
-  {'mesure_frontale' =>    ['//*[@id="AutoNumber1"]/tr[27]/td[2]/p/b/font', :s]},
-  {'superficie' =>         ['//*[@id="AutoNumber1"]/tr[28]/td[2]/p/b/font', :f]}, # m2
-  {'nb_etages' =>          ['//*[@id="AutoNumber1"]/tr[27]/td[5]/p/b/font', :i]},
-  {'annee_construction' => ['//*[@id="AutoNumber1"]/tr[27]/td[5]/p/b/font', :i]},
-  {'aire_etages' =>        ['//*[@id="AutoNumber1"]/tr[29]/td[5]/p/font/b', :f]}, # m2
-  {'genre_construction' => ['//*[@id="AutoNumber1"]/tr[30]/td[5]/p/b/font', :s]},
-  {'lien_physique' =>      ['//*[@id="AutoNumber1"]/tr[31]/td[5]/p/b/font', :s]},
-  {'nb_logements' =>       ['//*[@id="AutoNumber1"]/tr[32]/td[5]/p/b/font', :i]},
-  {'nb_locaux_non_residentiels' =>      ['//*[@id="AutoNumber1"]/tr[33]/td[5]/p/b/font', :i]},
-  {'nb_chambres_locatives' =>           ['//*[@id="AutoNumber1"]/tr[34]/td[5]/font/b', :i]},
-  {'date_reference' =>     ['//*[@id="AutoNumber1"]/tr[39]/td[2]/font/b', :s]},
-  {'valeur_terrain' =>     ['//*[@id="AutoNumber1"]/tr[40]/td[2]/p/b/font', :i]}, # $
-  {'valeur_batiment' =>    ['//*[@id="AutoNumber1"]/tr[41]/td[2]/p/b/font', :i]}, # $
-  {'valeur_immeuble' =>    ['//*[@id="AutoNumber1"]/tr[42]/td[2]/b/font', :i]},   # $
-  {'date_reference_role_anterieur' =>   ['//*[@id="AutoNumber1"]/tr[39]/td[5]/p/b/font', :s]},
-  {'valeur_immeuble_role_anterieur' =>  ['//*[@id="AutoNumber1"]/tr[40]/td[5]/p/b/font', :i]}, # $
-  {'categorie_repartition_fiscale' =>   ['//*[@id="AutoNumber1"]/tr[46]/td[1]/b/font', :s]},
-  {'valeur_imposable' =>   ['//*[@id="AutoNumber1"]/tr[47]/td[2]/p/b/font', :i]}, # $
-  {'valeur_non_imposable' =>            ['//*[@id="AutoNumber1"]/tr[47]/td[5]/p/b/font', :i]}, # $
-  {'mise_a_jour' =>        ['//*[@id="AutoNumber1"]/tr[50]/td[1]/font', :s]}
+fields = [
+  ["Adresse", :s, 'adresse'],
+  ["Adresse postale", :s, 'adresse_postale'],
+  ["Arrondissement", :s, 'arrondissement'],
+  ["Condition particulière d'inscription", :s, 'cond_particuliere'],
+  ["Date de référence au marché", :s, 'date_reference'],
+  ["Date d'inscription au rôle", :s, 'date_inscription'],
+  ["Dossier n°", :s, 'dossier_no'],
+  ["En vigueur pour les exercices financiers", :s, 'en_vigueur'],
+  ["Mesure frontale", :i, 'mesure_frontale'],
+  ["Municipalité de", :s, 'municipalite'],
+  ["Nom", :s, 'nom'],
+  ["Numéro de lot", :s, 'numero_lot'],
+  ["Numéro d'unité de voisinage", :s, 'unite_voisinage'],
+  ["Numéro matricule", :s, 'numero_matricule'],
+  ["Statut aux fins d'imposition scolaire", :s, 'statut_scolaire'],
+  ["Superficie", :i, 'superficie'],
+  ["Utilisation prédominante", :s, 'utilisation'],
+  ["Valeur de l'immeuble", :i, 'valeur_immeuble'],
+  ["Valeur du bâtiment", :i, 'valeur_batiment'],
+  ["Valeur du terrain", :i, 'valeur_terrain'],
+  ["Valeur imposable de l'immeuble", :i, 'valeur_imposable'],
+  ["Nombre d'étages", :i, 'nb_etages'],
+  ["Année de construction", :i, 'annee_construction'],
+  ["Aire d'étages", :i, 'aire_etages'],
+  ["Genre de construction", :s, 'genre_construction'],
+  ["Lien physique", :s, 'lien_physique'],
+  ["Nombre de logements", :i, 'nb_logements'],
+  ["Nombre de locaux non résidentiels", :i, 'nb_locaux_non_residentiels'],
+  ["Nombre de chambres locatives", :i, 'nb_chambres_locatives'],
+  ["Valeur de l'immeuble au rôle antérieur", :i, 'valeur_immeuble_anterieur'],
+  ["Valeur non imposable de l'immeuble", :i, 'valeur_non_imposable_immeuble'],
 ]
 
 File.open("evaluations.sql", 'w') do |sql|
   sql.write("create database evalmtl ENGINE=InnoDB;\n")
   sql.write("use evalmtl\n")
   sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
-  sql.write("create table evaluations (\n" + columns.map{|c| c.map{|col,t| "  #{col} #{sql_types[t]}"}}.join(",\n") + "\n) ENGINE=InnoDB;\n")
-  sql.write("LOAD DATA LOCAL INFILE 'evaluations.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
+  fields.map{|c|c[0] }.join("\t")
+  sql.write("create table evaluations (\n" + fields.map{|c| "  #{c[2]} #{sql_types[c[1]]}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
+  sql.write("LOAD DATA LOCAL INFILE 'evaluations_2014.csv' INTO TABLE evaluations CHARACTER SET UTF8 IGNORE 1 LINES;\n")
   sql.write("CREATE INDEX adresse_index ON evaluations (adresse);\n")
   sql.write("CREATE INDEX proprietaire_index ON evaluations (proprietaire);\n")
   sql.write("CREATE INDEX arrondissement_index ON evaluations (arrondissement);\n")
@@ -56,23 +54,56 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX uef_id_index ON evaluations (uef_id);\n")
 end
 
+def clean(value)
+  value.gsub(/[\s ]+/, " ").strip
+end
+def clean_label(value)
+  clean(value).gsub(/:/, '').strip
+end
+def is_valid_label(value)
+  !(value.empty? || value =~ /^\d/)
+end
+
 db = DBM.open('address_2014')
 File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
-  csv.write(columns.map{|c|c.keys}.join("\t"))
+  csv.write(fields.map{|c|c[0] }.join("\t"))
   csv.write("\n")
   db.each_entry do |address_id, page_content|
     page_content.force_encoding('utf-8')
     page = Nokogiri::HTML::Document.parse(page_content, encoding='UTF-8')
-    data = []
-    columns.each do |c|
-      value = page.xpath(c.values[0][0]).map {|elem| elem.content.gsub(/\s+/, " ").strip }.fetch(0, '')
-      value = case c.values[0][1]
-      when :i
-        value.gsub(' ', '').gsub('$', '')
-      else
-        value
+    @databases = Hash.new { |dbs, namespace| dbs[namespace] = DBM.open(namespace + "_2014") }
+    field_values = Hash.new { |h, label| h[label] = [] }
+    page.xpath('//*[@id="AutoNumber1"]/tr').map {|tr|
+      tds = tr.xpath('td')
+      case tds.count
+      when 3
+        label = clean_label(tds[0].content)
+        field_values[label] << clean(tds[1].content) if (is_valid_label(label))
+      when 6
+        label = clean_label(tds[0].content)
+        field_values[label] << clean(tds[1].content) if (is_valid_label(label))
+        label = clean_label(tds[3].content)
+        field_values[label] << clean(tds[4].content) if (is_valid_label(label))
       end
-      data.push(value)
+    }
+    data = []
+    fields.each_with_index do |col, i|
+      values = field_values.delete(col[0])
+      if (values.nil? || values.empty?) then
+        puts "missing: #{col[0]}"
+      else
+        data[i] = values.map { |v|
+          case col[1]
+          when :i
+            v.gsub(' ', '').strip.gsub(/\$/, '').gsub(/m2/, '').gsub(/m/, '').gsub(/\./, ',')
+          else
+            v
+          end
+        }.join('&')
+      end
+    end
+    field_values.each do |v|
+      puts "Not mapped: #{v}"
     end
     csv.write(data.join("\t"))
     csv.write("\n")
