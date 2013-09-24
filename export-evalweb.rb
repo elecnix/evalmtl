@@ -6,21 +6,40 @@ require 'mechanize'
 require 'dbm'
 
 columns = [
-  {'id' => :i},
-  {'adresse' => :s}, {'ville' => :s}, {'proprietaire' => :s},
-  {'arrondissement' => :s}, {'arrondissement_no' => :i},
-  {'matricule' => :s}, {'compte' => :i}, {'uef_id' => :i},
-  {'cubf' => :i}, {'nb_logements' => :i}, {'voisinage' => :i},
-  {'emplacement_front' => :i}, {'emplacemment_profondeur' => :i}, {'emplacement_superficie' => :i},
-  {'classe_non_residentielle' => :i}, {'classe_industrielle' => :s}, {'terrain_vague' => :s},
-  {'annee_construction' => :i}, {'nb_etages' => :i}, {'nb_autres_locaux' => :i},
-  {'annee_role_anterieur' => :i}, {'terrain_role_anterieur' => :i},
-  {'batiment_role_anterieur' => :i}, {'immeuble_role_anterieur' => :i}, {'vide' => :s},
-  {'loi' => :s}, {'article' => :s}, {'alinea' => :s}, {'valeur_terrain' => :i},
-  {'valeur_batiment' => :i}, {'valeur_immeuble' => :i},
-  {'code_imposition' => :s}, {'code_exemption' => :s}, {'maj' => :s},
-  {'no_lot_renove' => :i}, {'paroisse' => :s}, {'lot' => :s}, {'subd' => :s},
-  {'type_lot' => :s}, {'superficie' => :f}, {'front' => :f}, {'profond' => :f}
+  {'id' =>                 ['//*[@id="AutoNumber1"]/tr[14]/td[2]/b/font', :s]}, # no_dossier
+  {'municipalite' =>       ['//*[@id="AutoNumber1"]/tr[3]/td[2]/b/font', :s]},
+  {'role' =>               ['//*[@id="AutoNumber1"]/tr[4]/td[2]/b/font', :i]},
+  {'adresse' =>            ['//*[@id="AutoNumber1"]/tr[8]/td[2]/b/font', :s]},
+  {'arrondissement' =>     ['//*[@id="AutoNumber1"]/tr[9]/td[2]/b/font', :s]},
+  {'no_lot' =>             ['//*[@id="AutoNumber1"]/tr[10]/td[2]/b/font', :i]},
+  {'matricule' =>          ['//*[@id="AutoNumber1"]/tr[11]/td[2]/b/font', :i]},
+  {'unite_voisinage' =>    ['//*[@id="AutoNumber1"]/tr[13]/td[2]/b/font', :i]},
+  {'dossier' =>            ['//*[@id="AutoNumber1"]/tr[14]/td[2]/b/font', :s]},
+  {'proprietaire' =>       ['//*[@id="AutoNumber1"]/tr[18]/td[2]/b/font', :s]},
+  {'statut' =>             ['//*[@id="AutoNumber1"]/tr[19]/td[2]/font/b/font', :s]},
+  {'adresse_postale' =>    ['//*[@id="AutoNumber1"]/tr[20]/td[2]/b/font', :s]},
+  {'date_inscription' =>   ['//*[@id="AutoNumber1"]/tr[21]/td[2]/b/font', :s]},
+  {'cond_particuliere' =>  ['//*[@id="AutoNumber1"]/tr[22]/td[2]/b/font', :s]},
+  {'mesure_frontale' =>    ['//*[@id="AutoNumber1"]/tr[27]/td[2]/p/b/font', :s]},
+  {'superficie' =>         ['//*[@id="AutoNumber1"]/tr[28]/td[2]/p/b/font', :f]}, # m2
+  {'nb_etages' =>          ['//*[@id="AutoNumber1"]/tr[27]/td[5]/p/b/font', :i]},
+  {'annee_construction' => ['//*[@id="AutoNumber1"]/tr[27]/td[5]/p/b/font', :i]},
+  {'aire_etages' =>        ['//*[@id="AutoNumber1"]/tr[29]/td[5]/p/font/b', :f]}, # m2
+  {'genre_construction' => ['//*[@id="AutoNumber1"]/tr[30]/td[5]/p/b/font', :s]},
+  {'lien_physique' =>      ['//*[@id="AutoNumber1"]/tr[31]/td[5]/p/b/font', :s]},
+  {'nb_logements' =>       ['//*[@id="AutoNumber1"]/tr[32]/td[5]/p/b/font', :i]},
+  {'nb_locaux_non_residentiels' =>      ['//*[@id="AutoNumber1"]/tr[33]/td[5]/p/b/font', :i]},
+  {'nb_chambres_locatives' =>           ['//*[@id="AutoNumber1"]/tr[34]/td[5]/font/b', :i]},
+  {'date_reference' =>     ['//*[@id="AutoNumber1"]/tr[39]/td[2]/font/b', :s]},
+  {'valeur_terrain' =>     ['//*[@id="AutoNumber1"]/tr[40]/td[2]/p/b/font', :i]}, # $
+  {'valeur_batiment' =>    ['//*[@id="AutoNumber1"]/tr[41]/td[2]/p/b/font', :i]}, # $
+  {'valeur_immeuble' =>    ['//*[@id="AutoNumber1"]/tr[42]/td[2]/b/font', :i]},   # $
+  {'date_reference_role_anterieur' =>   ['//*[@id="AutoNumber1"]/tr[39]/td[5]/p/b/font', :s]},
+  {'valeur_immeuble_role_anterieur' =>  ['//*[@id="AutoNumber1"]/tr[40]/td[5]/p/b/font', :i]}, # $
+  {'categorie_repartition_fiscale' =>   ['//*[@id="AutoNumber1"]/tr[46]/td[1]/b/font', :s]},
+  {'valeur_imposable' =>   ['//*[@id="AutoNumber1"]/tr[47]/td[2]/p/b/font', :i]}, # $
+  {'valeur_non_imposable' =>            ['//*[@id="AutoNumber1"]/tr[47]/td[5]/p/b/font', :i]}, # $
+  {'mise_a_jour' =>        ['//*[@id="AutoNumber1"]/tr[50]/td[1]/font', :s]}
 ]
 
 File.open("evaluations.sql", 'w') do |sql|
@@ -44,12 +63,17 @@ File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
   db.each_entry do |address_id, page_content|
     page_content.force_encoding('utf-8')
     page = Nokogiri::HTML::Document.parse(page_content, encoding='UTF-8')
-    data = page.css("//td").map {|td| td.content.gsub(/\s+/, " ").strip}
-    data = data.each_with_index.map { |cell,index|
-      type = columns[index].values if columns[index]
-      type == :s ? cell : cell.gsub(',','')
-    }
-    data.unshift(address_id)
+    data = []
+    columns.each do |c|
+      value = page.xpath(c.values[0][0]).map {|elem| elem.content.gsub(/\s+/, " ").strip }.fetch(0, '')
+      value = case c.values[0][1]
+      when :i
+        value.gsub(' ', '').gsub('$', '')
+      else
+        value
+      end
+      data.push(value)
+    end
     csv.write(data.join("\t"))
     csv.write("\n")
   end
