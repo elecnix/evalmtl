@@ -37,6 +37,10 @@ fields = [
   ["Nombre de chambres locatives", :i, 'nb_chambres_locatives'],
   ["Valeur de l'immeuble au rôle antérieur", :i, 'valeur_immeuble_anterieur'],
   ["Valeur non imposable de l'immeuble", :i, 'valeur_non_imposable_immeuble'],
+  ["Zonage agricole", :s, 'zonage_agricole'],
+  ["Exploitation agricole enregistrée (EAE)", :s, 'eae'],
+  ["Superficie zonée EAE", :i, 'superficie_eae'],
+  ["Superficie totale EAE", :i, 'superficie_totale_eae']
 ]
 
 File.open("evaluations.sql", 'w') do |sql|
@@ -90,7 +94,7 @@ File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
     fields.each_with_index do |col, i|
       values = field_values.delete(col[0])
       if (values.nil? || values.empty?) then
-        puts "missing: #{col[0]}"
+        puts "[#{address_id}] missing: #{col[0]}"
       else
         data[i] = values.map { |v|
           case col[1]
@@ -103,7 +107,7 @@ File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
       end
     end
     field_values.each do |v|
-      puts "Not mapped: #{v}"
+      puts "[#{address_id}] Not mapped: #{v}"
     end
     csv.write(data.join("\t"))
     csv.write("\n")
