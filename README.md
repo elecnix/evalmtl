@@ -23,12 +23,10 @@ The scraper produces dir and pag files, where it stores the web pages it fetched
 Once it is done, extract the data. This will create `evaluations.csv` as well as the SQL commands to load it into MySQL:
 
     ./export-evalweb.rb
-    ./export-streets.rb
 
 Let it finish (it can take hours for the tar archive generation, and an hour for the CSV export), then import the resulting files into MySQL:
 
     mysql --local-infile -u root < evaluations_2014.sql
-    mysql --local-infile -u root < streets.sql
 
 You can now query the database:
 
