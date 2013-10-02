@@ -77,11 +77,39 @@ def is_valid_label(value)
   !(value.empty? || value =~ /^\d/)
 end
 
+streets = DBM.open('street_2014')
+street_for_address = DBM.open('address_street')
+
+skip_street_index = false
+
+if (!skip_street_index) then
+  puts "Opening search DB..."
+  street_search = DBM.open('street_search_2014')
+  street_search.each_entry do |term, results_body|
+    puts "Indexing: #{term}"
+    results_page = Nokogiri::HTML::Document.parse(results_body.force_encoding('utf-8')) 
+    results_page.css('select[@id=select1]/option').each do |street_option|
+      street_id = street_option.attribute('value').value
+      street_name = street_option.content.gsub(/\s+/, " ")
+      street_body = streets[street_id].force_encoding('utf-8')
+      street_page = Nokogiri::HTML::Document.parse(street_body) 
+      street_page.css("option").each do |option|
+        address_id = option.attribute('value').value
+        street_for_address[address_id] = street_name
+  #      puts "#{term} -> #{street_name} -> #{address_id}"
+      end
+    end
+  end
+  street_search.close
+end
+
 db = DBM.open('address_2014')
-File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
+File.open("evaluations_2014_with_streets.csv", 'w:UTF-8') do |csv|
+  csv.write("street_name\t")
   csv.write(fields.map{|c|c[0] }.join("\t"))
   csv.write("\n")
   db.each_entry do |address_id, page_content|
+    address_id.force_encoding('utf-8')
     page_content.force_encoding('utf-8')
     page = Nokogiri::HTML::Document.parse(page_content, encoding='UTF-8')
     @databases = Hash.new { |dbs, namespace| dbs[namespace] = DBM.open(namespace + "_2014") }
@@ -118,9 +146,20 @@ File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
     field_values.each do |v|
       puts "[#{address_id}] Not mapped: #{v}"
     end
+    street_name = street_for_address[address_id]
+    if street_name.nil? then
+      puts "No street name! #{address_id}"
+    else
+      street_name.force_encoding('utf-8') 
+      street_name = street_name.split('/')[0].strip
+      puts "#{street_name} -> #{address_id}"
+    end
+    csv.write("#{street_name}\t")
     csv.write(data.join("\t"))
     csv.write("\n")
   end
 end
 db.close
+
+street_for_address.close
 
