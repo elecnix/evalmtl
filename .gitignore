@@ -1,2 +1,9 @@
 cache
-
+*.dir
+*.pag
+.state
+*.csv
+*.sql
+*.gz
+*.log
+.project
