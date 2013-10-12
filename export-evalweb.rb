@@ -14,14 +14,14 @@ fields = [
   ["Date d'inscription au rôle", :s, 'date_inscription', :na],
   ["Dossier n°", :s, 'dossier_no', :na],
   ["En vigueur pour les exercices financiers", :s, 'en_vigueur', :na],
-  ["Mesure frontale", :i, 'mesure_frontale', :sum],
+  ["Mesure frontale", :f, 'mesure_frontale', :sum],
   ["Municipalité de", :s, 'municipalite', :values],
   ["Nom", :s, 'nom', :na],
   ["Numéro de lot", :s, 'numero_lot', :na],
   ["Numéro d'unité de voisinage", :s, 'unite_voisinage', :na],
   ["Numéro matricule", :s, 'numero_matricule', :na],
   ["Statut aux fins d'imposition scolaire", :s, 'statut_scolaire', :values],
-  ["Superficie", :i, 'superficie', :sum],
+  ["Superficie", :f, 'superficie', :sum],
   ["Utilisation prédominante", :s, 'utilisation', :values],
   ["Valeur de l'immeuble", :i, 'valeur_immeuble', :sum],
   ["Valeur du bâtiment", :i, 'valeur_batiment', :sum],
@@ -29,7 +29,7 @@ fields = [
   ["Valeur imposable de l'immeuble", :i, 'valeur_imposable', :sum],
   ["Nombre d'étages", :i, 'nb_etages', :values],
   ["Année de construction", :i, 'annee_construction', :values],
-  ["Aire d'étages", :i, 'aire_etages', :sum],
+  ["Aire d'étages", :f, 'aire_etages', :sum],
   ["Genre de construction", :s, 'genre_construction', :values],
   ["Lien physique", :s, 'lien_physique', :values],
   ["Nombre de logements", :i, 'nb_logements', :values],
@@ -39,17 +39,18 @@ fields = [
   ["Valeur non imposable de l'immeuble", :i, 'valeur_non_imposable_immeuble', :sum],
   ["Zonage agricole", :s, 'zonage_agricole', :values],
   ["Exploitation agricole enregistrée (EAE)", :s, 'eae', :values],
-  ["Superficie zonée EAE", :i, 'superficie_eae', :sum],
-  ["Superficie totale EAE", :i, 'superficie_totale_eae', :sum]
+  ["Superficie zonée EAE", :f, 'superficie_eae', :sum],
+  ["Superficie totale EAE", :f, 'superficie_totale_eae', :sum]
 ]
 
-File.open("evaluations.sql", 'w') do |sql|
+File.open("evaluations_2014.sql", 'w') do |sql|
   sql.write("create database evalmtl ENGINE=InnoDB;\n")
   sql.write("use evalmtl\n")
-  sql_types = {:s => "varchar(255)", :i => "integer", :f => "float"}
+  sql_types = {:s => "varchar(10000)", :i => "integer", :f => "NUMERIC(20, 4)"}
   fields.map{|c|c[0] }.join("\t")
-  sql.write("create table evaluations_2014 (\n" + fields.map{|c| "  #{c[2]} #{sql_types[c[1]]}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
+  sql.write("create table evaluations_2014 (street_name varchar(255), \n" + fields.map{|c| "  #{c[2]} #{sql_types[c[1]]}"}.join(",\n") + "\n) ENGINE=InnoDB;\n")
   sql.write("LOAD DATA LOCAL INFILE 'evaluations_2014.csv' INTO TABLE evaluations_2014 CHARACTER SET UTF8 IGNORE 1 LINES;\n")
+  sql.write("CREATE INDEX street_name_index ON evaluations_2014 (street_name);\n")
   sql.write("CREATE INDEX adresse_index ON evaluations_2014 (adresse);\n")
   sql.write("CREATE INDEX nom_index ON evaluations_2014 (nom);\n")
   sql.write("CREATE INDEX arrondissement_index ON evaluations_2014 (arrondissement);\n")
@@ -62,10 +63,14 @@ File.open("evaluations.sql", 'w') do |sql|
   sql.write("CREATE INDEX nb_logements_index ON evaluations_2014 (nb_logements);\n")
   sql.write("CREATE INDEX nb_locaux_non_residentiels_index ON evaluations_2014 (nb_locaux_non_residentiels);\n")
   sql.write("CREATE INDEX nb_chambres_locatives_index ON evaluations_2014 (nb_chambres_locatives);\n")
+  sql.write("ALTER TABLE evaluations_2014 ADD COLUMN code_postal_proprio varchar(7);\n")
+  sql.write("UPDATE evaluations_2014 SET code_postal_proprio = substr(adresse_postale,-7,7);");
+  sql.write("CREATE INDEX code_postal_proprio_index ON evaluations_2014 (code_postal_proprio);\n")
   value_fields = fields.select{|c| c[3] == :values}
   sum_fields = fields.select{|c| c[3] == :sum}
-  sql.write("CREATE TABLE evaluations_2014_aggregate SELECT " + value_fields.map{|c| " #{c[2]}"}.join(",\n") + ",\n" + sum_fields.map{|c| " sum(#{c[2]}) as #{c[2]}_sum"}.join(",\n") + "\n  FROM evaluations_2014\n  GROUP BY " + value_fields.map{|c| " #{c[2]}"}.join(",\n") + ";\n");
+  sql.write("CREATE TABLE evaluations_2014_aggregate SELECT street_name, " + value_fields.map{|c| " #{c[2]}"}.join(",\n") + ",\n" + sum_fields.map{|c| " sum(#{c[2]}) as #{c[2]}_sum"}.join(",\n") + "\n  FROM evaluations_2014\n  GROUP BY " + value_fields.map{|c| " #{c[2]}"}.join(",\n") + ";\n");
 end
+#return
 
 def clean(value)
   value.gsub(/[\s ]+/, " ").strip
@@ -104,7 +109,7 @@ if (!skip_street_index) then
 end
 
 db = DBM.open('address_2014')
-File.open("evaluations_2014_with_streets.csv", 'w:UTF-8') do |csv|
+File.open("evaluations_2014.csv", 'w:UTF-8') do |csv|
   csv.write("street_name\t")
   csv.write(fields.map{|c|c[0] }.join("\t"))
   csv.write("\n")
@@ -132,11 +137,12 @@ File.open("evaluations_2014_with_streets.csv", 'w:UTF-8') do |csv|
       values = field_values.delete(col[0])
       if (values.nil? || values.empty?) then
         puts "[#{address_id}] missing: #{col[0]}"
+        data[i] = nil
       else
         data[i] = values.map { |v|
           case col[1]
-          when :i
-            v.gsub(' ', '').strip.gsub(/\$/, '').gsub(/m2/, '').gsub(/m/, '').gsub(/\./, ',')
+          when :i, :f
+            v.gsub(' ', '').strip.gsub(/\$/, '').gsub(/m2/, '').gsub(/m/, '').gsub(/\(estiée\)/, '')
           else
             v
           end

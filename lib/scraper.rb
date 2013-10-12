@@ -97,7 +97,7 @@ class EvalWebScraper
     end
   end
   def state_file
-    "state"
+    ".state"
   end
   def read_state
     File.open(state_file, 'rb') { |f| f.read.split } if (File.exists?(state_file))

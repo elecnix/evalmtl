@@ -189,3 +189,11 @@ Now, get creative!
 
 http://argent.canoe.ca/lca/financespersonnelles/quebec/archives/2010/01/20100111-113558.html
 
+# PostgreSQL
+
+    sudo -u postgres psql -c "create database evalmtl"
+
+Create database as per `evaluations_2014.sql`. Then import the CSV file:
+
+    psql -d evalmtl -c "COPY evaluations_2014 FROM '/path/to/evaluations_2014.csv' DELIMITER e'\t' CSV HEADER;"
+
